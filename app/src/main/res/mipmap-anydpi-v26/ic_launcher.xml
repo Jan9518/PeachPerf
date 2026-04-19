@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFB7C5"/>
+            <corners android:radius="24dp"/>
+        </shape>
+    </background>
+    <foreground>
+        <inset android:inset="20%">
+            <vector android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+                <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round"
+                    android:fillColor="#00000000"
+                    android:pathData="M12,70 L28,70 L36,70 L42,45 L48,80 L54,55 L60,70 L72,70 L84,70 L96,70"/>
+                <path android:fillColor="#FFFFFF"
+                    android:pathData="M86,84 C86,82 84,78 80,78 C76,78 74,82 74,84 C74,88 80,92 80,92 C80,92 86,88 86,84 Z"/>
+            </vector>
+        </inset>
+    </foreground>
+</adaptive-icon>
