@@ -22,12 +22,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peach.perf.data.MonitorHolder
 import com.peach.perf.util.RootManager
+import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        RootManager.init()
+        // 先初始化 Shell，请求 Root 权限
+        Shell.getShell { shell ->
+            RootManager.init()
+        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 MainScreen()
@@ -49,7 +53,6 @@ fun MainScreen() {
         while (true) {
             root = RootManager.isRootAvailable()
             overlay = Settings.canDrawOverlays(ctx)
-            // 添加调试信息
             debugInfo = "Root: $root, Overlay: $overlay\nStats: ${stats != null}"
             delay(1000)
         }
@@ -109,7 +112,7 @@ fun MainScreen() {
                                 Toast.makeText(ctx, "请授予Root权限", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        enabled = overlay && root && !running,
+                        enabled = overlay && !running,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB7C5))
                     ) { Text("启动") }
