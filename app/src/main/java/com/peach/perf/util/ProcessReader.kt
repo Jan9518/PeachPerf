@@ -47,10 +47,14 @@ object ProcessReader {
         processes.sortedByDescending { it.cpuPercent }.take(limit)
     }
 
-    private fun readTotalCpuTime(): Long = try {
-        val result = Shell.cmd("cat /proc/stat").exec()
-        if (!result.isSuccess) return 0L
-        val stat = result.out.firstOrNull { it.startsWith("cpu ") } ?: return 0L
-        stat.split("\\s+".toRegex()).drop(1).mapNotNull { it.toLongOrNull() }.sum()
-    } catch (e: Exception) { 0L }
+    private fun readTotalCpuTime(): Long {
+        return try {
+            val result = Shell.cmd("cat /proc/stat").exec()
+            if (!result.isSuccess) 0L
+            else {
+                val stat = result.out.firstOrNull { it.startsWith("cpu ") } ?: return 0L
+                stat.split("\\s+".toRegex()).drop(1).mapNotNull { it.toLongOrNull() }.sum()
+            }
+        } catch (e: Exception) { 0L }
+    }
 }
