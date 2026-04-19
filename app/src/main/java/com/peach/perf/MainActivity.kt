@@ -1,5 +1,4 @@
 package com.peach.perf
-
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -23,23 +22,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peach.perf.data.MonitorHolder
-import com.topjohnwu.superuser.Shell
+import com.peach.perf.util.RootManager
 import kotlinx.coroutines.delay
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // 主动请求 root 权限
-        Shell.getShell { shell ->
-            if (shell.isRoot) {
-                runOnUiThread {
-                    Toast.makeText(this, "✅ Root 权限已获取", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                runOnUiThread {
-                    Toast.makeText(this, "❌ 未获取 Root 权限", Toast.LENGTH_SHORT).show()
-                }
+        RootManager.initialize()
+        RootManager.requestRootPermission { granted ->
+            runOnUiThread {
+                Toast.makeText(this, if (granted) "✅ Root 权限已获取" else "❌ 未获取 Root 权限", Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -50,7 +42,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun PeachPerfTheme(content: @Composable () -> Unit) {
     MaterialTheme(
@@ -68,7 +59,6 @@ fun PeachPerfTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
-
 @Composable
 fun MainScreen() {
     val ctx = LocalContext.current
@@ -76,15 +66,13 @@ fun MainScreen() {
     var running by remember { mutableStateOf(false) }
     var root by remember { mutableStateOf(false) }
     var overlay by remember { mutableStateOf(false) }
-
     LaunchedEffect(Unit) {
         while (true) {
-            root = try { Shell.getShell().isRoot } catch (e: Exception) { false }
+            root = try { RootManager.isRootAvailable() } catch (e: Exception) { false }
             overlay = Settings.canDrawOverlays(ctx)
             delay(1000)
         }
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -105,7 +93,6 @@ fun MainScreen() {
                 }
                 Spacer(Modifier.height(8.dp))
             }
-
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -122,7 +109,6 @@ fun MainScreen() {
                     }
                 }
             }
-
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -139,7 +125,6 @@ fun MainScreen() {
                     }
                 }
             }
-
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -181,12 +166,10 @@ fun MainScreen() {
                     }
                 }
             }
-
             item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }
-
 @Composable
 fun StatusItem(label: String, enabled: Boolean, trueColor: Color, falseColor: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -206,7 +189,6 @@ fun StatusItem(label: String, enabled: Boolean, trueColor: Color, falseColor: Co
         )
     }
 }
-
 @Composable
 fun DataRow(label: String, value: Float, unit: String, color: Color) {
     Row(
