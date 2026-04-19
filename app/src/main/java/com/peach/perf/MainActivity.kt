@@ -23,14 +23,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peach.perf.data.MonitorHolder
-import com.peach.perf.util.RootManager
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shell.getShell { RootManager.init() }
+        
+        // 主动请求 root 权限
+        Shell.getShell { shell ->
+            if (shell.isRoot) {
+                runOnUiThread {
+                    Toast.makeText(this, "✅ Root 权限已获取", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this, "❌ 未获取 Root 权限", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        
         setContent {
             PeachPerfTheme {
                 MainScreen()
@@ -67,7 +79,7 @@ fun MainScreen() {
 
     LaunchedEffect(Unit) {
         while (true) {
-            root = RootManager.isRootAvailable()
+            root = try { Shell.getShell().isRoot } catch (e: Exception) { false }
             overlay = Settings.canDrawOverlays(ctx)
             delay(1000)
         }
@@ -86,7 +98,6 @@ fun MainScreen() {
             modifier = Modifier.fillMaxSize().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 标题
             item {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("🍑 PeachPerf", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB7C5))
@@ -95,7 +106,6 @@ fun MainScreen() {
                 Spacer(Modifier.height(8.dp))
             }
 
-            // 状态卡片
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -113,7 +123,6 @@ fun MainScreen() {
                 }
             }
 
-            // 实时数据卡片
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -131,7 +140,6 @@ fun MainScreen() {
                 }
             }
 
-            // 控制按钮
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
