@@ -21,41 +21,51 @@ class MonitorService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("PeachPerf")
-            .setContentText("性能监控运行中")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setOngoing(true)
-            .build()
-        startForeground(notificationId, notification)
+        try {
+            createNotificationChannel()
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setContentTitle("PeachPerf")
+                .setContentText("性能监控运行中")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setOngoing(true)
+                .build()
+            startForeground(notificationId, notification)
 
-        scope.launch {
-            while (isActive) {
-                val stats = collectStats()
-                MonitorHolder.stats.value = stats
-                MonitorHolder.batteryLevel.value = SysInfoReader.readBatteryLevel()
-                MonitorHolder.batteryVoltage.value = SysInfoReader.readBatteryVoltage()
-                MonitorHolder.batteryCurrent.value = SysInfoReader.readBatteryCurrent()
-                MonitorHolder.chart.value = MonitorHolder.chart.value.toMutableList().apply {
-                    add(ChartDataPoint(stats.cpuUsage, stats.gpuUsage, stats.memoryUsage, stats.temperature))
-                    if (size > 60) removeAt(0)
+            scope.launch {
+                while (isActive) {
+                    try {
+                        val stats = collectStats()
+                        MonitorHolder.stats.value = stats
+                        MonitorHolder.batteryLevel.value = SysInfoReader.readBatteryLevel()
+                        MonitorHolder.batteryVoltage.value = SysInfoReader.readBatteryVoltage()
+                        MonitorHolder.batteryCurrent.value = SysInfoReader.readBatteryCurrent()
+                        MonitorHolder.chart.value = MonitorHolder.chart.value.toMutableList().apply {
+                            add(ChartDataPoint(stats.cpuUsage, stats.gpuUsage, stats.memoryUsage, stats.temperature))
+                            if (size > 60) removeAt(0)
+                        }
+                        val (rx, tx) = stats.networkRx to stats.networkTx
+                        MonitorHolder.todayRxBytes.value = MonitorHolder.todayRxBytes.value + rx
+                        MonitorHolder.todayTxBytes.value = MonitorHolder.todayTxBytes.value + tx
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // 即使出错也继续运行
+                    }
+                    delay(1000)
                 }
-                val (rx, tx) = stats.networkRx to stats.networkTx
-                MonitorHolder.todayRxBytes.value = MonitorHolder.todayRxBytes.value + rx
-                MonitorHolder.todayTxBytes.value = MonitorHolder.todayTxBytes.value + tx
-                delay(1000)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            stopSelf()
         }
     }
 
     private suspend fun collectStats(): SystemStats {
-        val cpu = SysInfoReader.readCpuUsage()
-        val gpu = SysInfoReader.readGpuLoad()
-        val memory = SysInfoReader.readMemoryUsage()
-        val temp = SysInfoReader.readMaxTemperature()
-        val (rx, tx) = SysInfoReader.readNetworkSpeed()
-        val processes = ProcessReader.readTopProcesses(10)
+        val cpu = try { SysInfoReader.readCpuUsage() } catch (e: Exception) { 0f }
+        val gpu = try { SysInfoReader.readGpuLoad() } catch (e: Exception) { 0f }
+        val memory = try { SysInfoReader.readMemoryUsage() } catch (e: Exception) { 0f }
+        val temp = try { SysInfoReader.readMaxTemperature() } catch (e: Exception) { 0f }
+        val (rx, tx) = try { SysInfoReader.readNetworkSpeed() } catch (e: Exception) { 0L to 0L }
+        val processes = try { ProcessReader.readTopProcesses(10) } catch (e: Exception) { emptyList() }
         return SystemStats(System.currentTimeMillis(), cpu, gpu, memory, temp, rx, tx, processes)
     }
 

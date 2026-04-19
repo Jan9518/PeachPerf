@@ -43,11 +43,14 @@ fun MainScreen() {
     var running by remember { mutableStateOf(false) }
     var root by remember { mutableStateOf(false) }
     var overlay by remember { mutableStateOf(false) }
+    var debugInfo by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         while (true) {
             root = RootManager.isRootAvailable()
             overlay = Settings.canDrawOverlays(ctx)
+            // 添加调试信息
+            debugInfo = "Root: $root, Overlay: $overlay\nStats: ${stats != null}"
             delay(1000)
         }
     }
@@ -72,6 +75,7 @@ fun MainScreen() {
                         Spacer(Modifier.height(8.dp))
                         Text("Root: ${if (root) "已授权" else "未授权"}", color = if (root) Color(0xFF00E676) else Color(0xFFFF6D00))
                         Text("悬浮窗: ${if (overlay) "已授权" else "未授权"}", color = if (overlay) Color(0xFF00E676) else Color(0xFFFF6D00))
+                        Text("数据连接: ${if (stats != null) "正常" else "无数据"}", color = if (stats != null) Color(0xFF00E676) else Color(0xFFFF6D00))
                     }
                 }
             }
@@ -86,6 +90,9 @@ fun MainScreen() {
                         Text("温度: ${stats?.temperature?.toInt() ?: 0}°C", color = Color(0xFFFF6D00), fontSize = 20.sp, fontFamily = FontFamily.Monospace)
                     }
                 }
+            }
+            item {
+                Text(debugInfo, color = Color.Gray, fontSize = 12.sp)
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
