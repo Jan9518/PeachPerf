@@ -7,11 +7,13 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.peach.perf.data.ChartDataPoint
 import com.peach.perf.data.MonitorHolder
 import com.peach.perf.data.SystemStats
-import com.peach.perf.util.ProcessReader
-import com.peach.perf.util.SysInfoReader
+import com.peach.perf.util.CpuLoadUtils
+import com.peach.perf.util.MemoryUtils
+import com.peach.perf.util.NetworkUtils
+import com.peach.perf.util.ProcessUtils
+import com.peach.perf.util.ThermalControlUtils
 import kotlinx.coroutines.*
 
 class MonitorService : Service() {
@@ -36,19 +38,17 @@ class MonitorService : Service() {
                     try {
                         val stats = collectStats()
                         MonitorHolder.stats.value = stats
-                        MonitorHolder.batteryLevel.value = SysInfoReader.readBatteryLevel()
-                        MonitorHolder.batteryVoltage.value = SysInfoReader.readBatteryVoltage()
-                        MonitorHolder.batteryCurrent.value = SysInfoReader.readBatteryCurrent()
                         MonitorHolder.chart.value = MonitorHolder.chart.value.toMutableList().apply {
-                            add(ChartDataPoint(stats.cpuUsage, stats.gpuUsage, stats.memoryUsage, stats.temperature))
+                            add(com.peach.perf.data.ChartDataPoint(
+                                stats.cpuUsage,
+                                stats.gpuUsage,
+                                stats.memoryUsage,
+                                stats.temperature
+                            ))
                             if (size > 60) removeAt(0)
                         }
-                        val (rx, tx) = stats.networkRx to stats.networkTx
-                        MonitorHolder.todayRxBytes.value = MonitorHolder.todayRxBytes.value + rx
-                        MonitorHolder.todayTxBytes.value = MonitorHolder.todayTxBytes.value + tx
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        // 即使出错也继续运行
                     }
                     delay(1000)
                 }
@@ -60,13 +60,24 @@ class MonitorService : Service() {
     }
 
     private suspend fun collectStats(): SystemStats {
-        val cpu = try { SysInfoReader.readCpuUsage() } catch (e: Exception) { 0f }
-        val gpu = try { SysInfoReader.readGpuLoad() } catch (e: Exception) { 0f }
-        val memory = try { SysInfoReader.readMemoryUsage() } catch (e: Exception) { 0f }
-        val temp = try { SysInfoReader.readMaxTemperature() } catch (e: Exception) { 0f }
-        val (rx, tx) = try { SysInfoReader.readNetworkSpeed() } catch (e: Exception) { 0L to 0L }
-        val processes = try { ProcessReader.readTopProcesses(10) } catch (e: Exception) { emptyList() }
-        return SystemStats(System.currentTimeMillis(), cpu, gpu, memory, temp, rx, tx, processes)
+        // 使用 Scene 的工具类读取数据
+        val cpu = try { CpuLoadUtils.getCpuUsage() } catch (e: Exception) { 0f }
+        val gpu = try { 0f } catch (e: Exception) { 0f } // GPU 暂时用 0
+        val memory = try { MemoryUtils.getMemoryUsage() } catch (e: Exception) { 0f }
+        val temp = try { ThermalControlUtils.getTemperature() } catch (e: Exception) { 0f }
+        val (rx, tx) = try { NetworkUtils.getNetworkSpeed() } catch (e: Exception) { 0L to 0L }
+        val processes = try { ProcessUtils.getProcessList() } catch (e: Exception) { emptyList() }
+        
+        return SystemStats(
+            timestamp = System.currentTimeMillis(),
+            cpuUsage = cpu,
+            gpuUsage = gpu,
+            memoryUsage = memory,
+            temperature = temp,
+            networkRx = rx,
+            networkTx = tx,
+            topProcesses = processes
+        )
     }
 
     private fun createNotificationChannel() {
