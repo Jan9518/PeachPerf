@@ -1,29 +1,13 @@
 package com.peach.perf.util
 
-import com.topjohnwu.superuser.Shell
-
 object RootManager {
-
-    fun initialize() {
-        Shell.setDefaultBuilder(
-            Shell.Builder.create()
-                .setFlags(Shell.FLAG_MOUNT_MASTER)
-                .setTimeout(10_000)
-        )
-        Shell.enableVerboseLogging = true
+    
+    fun init() {
+        // Scene 的 Root 初始化
+        KeepShell.init()
     }
-
-    fun requestRootPermission(onResult: (Boolean) -> Unit) {
-        Shell.getShell { shell ->
-            onResult(shell.isRoot)
-        }
-    }
-
+    
     fun isRootAvailable(): Boolean {
-        return try {
-            Shell.getShell().isRoot
-        } catch (e: Exception) {
-            false
-        }
+        return CheckRootStatus.isRootAvailable()
     }
 }
